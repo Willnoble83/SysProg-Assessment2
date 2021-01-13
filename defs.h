@@ -26,6 +26,7 @@ uchar*          consolevgabuffer(void);
 void            consolevgaplane(uchar);
 void            panic(char*) __attribute__((noreturn));
 
+
 // exec.c
 int             exec(char*, char**);
 

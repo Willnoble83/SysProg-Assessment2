@@ -78,6 +78,8 @@ int argstr(int n, char **pp) {
     return fetchstr(addr, pp);
 }
 
+
+
 extern int sys_chdir(void);
 extern int sys_close(void);
 extern int sys_dup(void);
@@ -100,7 +102,12 @@ extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_getch(void);
-// TODO: Expose your system call assembly function to C.
+//My system calls
+extern int sys_greeting(void);
+extern int sys_videomodevga(void);
+extern int sys_videomodetext(void);
+extern int sys_setspecificpixel(void);
+extern int sys_setpixel(void);
 
 static int (*syscalls[])(void) = {
     [SYS_fork]    sys_fork,
@@ -125,6 +132,11 @@ static int (*syscalls[])(void) = {
     [SYS_mkdir]   sys_mkdir,
     [SYS_close]   sys_close,
     [SYS_getch]   sys_getch,
+    [SYS_greeting] sys_greeting,
+    [SYS_videomodevga] sys_videomodevga,
+    [SYS_videomodetext] sys_videomodetext,
+    [SYS_setspecificpixel] sys_setspecificpixel,
+    [SYS_setpixel] sys_setpixel,
     // TODO: Add your system call function to the OS syscall table.
 };
 

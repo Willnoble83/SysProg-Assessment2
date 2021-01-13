@@ -791,7 +791,7 @@ void writeFont(uchar * fontBuffer, unsigned int fontHeight) {
     outb(VGA_GC_INDEX, 5);
     outb(VGA_GC_DATA, gc5);
     outb(VGA_GC_INDEX, 6);
-    outb(VGA_GC_DATA, gc6);
+    outb(VGA_GC_DATA, gc6); 
 }
 
 /**
@@ -876,3 +876,4 @@ uchar* consolevgabuffer() {
 
     return base;
 }
+//int pos_x, int pos_y, unsigned char VGA_COLOR

@@ -24,6 +24,14 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int getch(void);
+int greeting(void);
+int add(int a, int b);
+int test(void);
+int videomodevga(void);
+int videomodetext(void);
+int setspecificpixel(int x, int y, int VGA_Colour);
+int setpixel(int pos_x, int pos_y, int VGA_COLOR);
+int ClearScreen(int height, int width, int colour);
 // TODO: Declare your user APIs for your system calls.
 
 // ulib.c
@@ -39,3 +47,4 @@ void* memset(void*, int, uint);
 void* malloc(uint);
 void free(void*);
 int atoi(const char*);
+
