@@ -190,6 +190,7 @@ UPROGS=\
 	_hello\
 	_add\
 	_draw\
+	_drawlines\
 
 fs.img: mkfs $(UPROGS)
 	./mkfs fs.img $(UPROGS)

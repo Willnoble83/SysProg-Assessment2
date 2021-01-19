@@ -107,7 +107,6 @@ extern int sys_greeting(void);
 extern int sys_videomodevga(void);
 extern int sys_videomodetext(void);
 extern int sys_setspecificpixel(void);
-extern int sys_setpixel(void);
 
 static int (*syscalls[])(void) = {
     [SYS_fork]    sys_fork,
@@ -136,7 +135,6 @@ static int (*syscalls[])(void) = {
     [SYS_videomodevga] sys_videomodevga,
     [SYS_videomodetext] sys_videomodetext,
     [SYS_setspecificpixel] sys_setspecificpixel,
-    [SYS_setpixel] sys_setpixel,
     // TODO: Add your system call function to the OS syscall table.
 };
 

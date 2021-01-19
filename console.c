@@ -29,6 +29,14 @@ static int panicked = 0;
 
 uint currentvgamode = 0x03;
 
+struct ConsoleSnapshot
+{
+    int cursorPos;
+    uchar registerValues[2000];
+};
+
+struct ConsoleSnapshot snapshotInstance;
+
 /**
  * Global console state shared between all processes and CPUs.
  */
@@ -155,34 +163,61 @@ static void cgaputc(int c) {
     pos = inb(CRTPORT + 1) << 8;
     outb(CRTPORT, 15);
     pos |= inb(CRTPORT + 1);
-
-    if (c == '\n') {
-        pos += 80 - pos % 80;
-    }
-    else if (c == BACKSPACE) {
-        if (pos > 0) {
-            --pos;
+    if(currentvgamode ==0x03) //If we are in text, work as usual
+    {
+        if (c == '\n') {
+            pos += 80 - pos % 80;
         }
-    }
-    else {
-        crt[pos++] = (c & 0xff) | 0x0700;  // black on white
+        else if (c == BACKSPACE) {
+            if (pos > 0) {
+                --pos;
+            }
+        }
+        else {
+            crt[pos++] = (c & 0xff) | 0x0700;  // black on white
+        }
+        
+        if (pos < 0 || pos > 25 * 80) {
+            panic("pos under/overflow");
+        }
 
+        if ((pos / 80) >= 24) { // Scroll up.
+            memmove(crt, crt + 80, sizeof(crt[0]) * 23 * 80);
+            pos -= 80;
+            memset(crt + pos, 0, sizeof(crt[0]) * (24 * 80 - pos));
+        }
+        outb(CRTPORT, 14);
+        outb(CRTPORT + 1, pos >> 8);
+        outb(CRTPORT, 15);
+        outb(CRTPORT + 1, pos);
+        crt[pos] = ' ' | 0x0700;
     }
-    if (pos < 0 || pos > 25 * 80) {
-        panic("pos under/overflow");
-    }
+    else  //If we're in non-text mode, update our snapshot instance instead!
+    { 
+        if (c == '\n') {
+            snapshotInstance.cursorPos += 80 - snapshotInstance.cursorPos % 80;
+        }
+        else if (c == BACKSPACE) {
+            if (snapshotInstance.cursorPos > 0) {
+                --snapshotInstance.cursorPos;
+            }
+        }
+        else {
+            snapshotInstance.registerValues[snapshotInstance.cursorPos] = (c & 0xff) | 0x0700;  // black on white
+            snapshotInstance.cursorPos++;
+        }
+        
+        if (snapshotInstance.cursorPos < 0 || snapshotInstance.cursorPos > 25 * 80) {
+            panic("pos under/overflow");
+        }
 
-    if ((pos / 80) >= 24) { // Scroll up.
-        memmove(crt, crt + 80, sizeof(crt[0]) * 23 * 80);
-        pos -= 80;
-        memset(crt + pos, 0, sizeof(crt[0]) * (24 * 80 - pos));
+        if ((snapshotInstance.cursorPos / 80) >= 24) { // Scroll up.
+            memmove(snapshotInstance.registerValues, snapshotInstance.registerValues + 80, sizeof(snapshotInstance.registerValues[0]) * 23 * 80);
+            snapshotInstance.cursorPos -= 80;
+            memset(snapshotInstance.registerValues + snapshotInstance.cursorPos, 0, sizeof(snapshotInstance.registerValues[0]) * (24 * 80 - snapshotInstance.cursorPos));
+        }
+        
     }
-
-    outb(CRTPORT, 14);
-    outb(CRTPORT + 1, pos >> 8);
-    outb(CRTPORT, 15);
-    outb(CRTPORT + 1, pos);
-    crt[pos] = ' ' | 0x0700;
 }
 
 void consputc(int c) {
@@ -366,15 +401,15 @@ uchar registers_80x25_text[] =
     /* Miscellaneous registers */
     0x67,
     /* Sequencer registers */
-    0x03, 0x00, 0x03, 0x00, 0x02,
+    0x03, 0x00, 0x03, 0x00, 0x02, 
     /* CRTC registers */
     0x5F, 0x4F, 0x50, 0x82, 0x55, 0x81, 0xBF, 0x1F,
     0x00, 0x4F, 0x0D, 0x0E, 0x00, 0x00, 0x00, 0x50,
     0x9C, 0x0E, 0x8F, 0x28, 0x1F, 0x96, 0xB9, 0xA3,
-    0xFF,
+    0xFF, 
     /* Graphics Controller registers */
     0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x0E, 0x00,
-    0xFF,
+    0xFF, 
     /* Attribute Controller registers */
     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x14, 0x07,
     0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F,
@@ -699,6 +734,15 @@ void consolevgaplane(uchar plane) {
     outb(VGA_SEQ_DATA, planeMask);
 }
 
+
+
+
+void snapshotWrite()                        // For writing to the console whilst in video mode
+{
+}
+
+
+
 // Write the specified values to the VGA registers
 static void writeVideoRegisters(uchar* regs) {
     unsigned i;
@@ -747,7 +791,48 @@ static void writeVideoRegisters(uchar* regs) {
     (void)inb(VGA_INSTAT_READ);
     outb(VGA_AC_INDEX, 0x20);
 }
+void snapshotTextRestore()                  // For restoring the console when entering back into text mode.
+{
 
+    // Declare some variables
+    int i;
+    ushort* crt = VGA_0x03_MEMORY;
+
+    for (i = 0; i < 2000; i++) //Loop through the entire register values in our snapshot
+    {
+        crt[i] = (snapshotInstance.registerValues[i] & 0xff) | 0x0700;
+    }
+
+
+    int pos = snapshotInstance.cursorPos;
+    outb(CRTPORT, 14);
+    outb(CRTPORT + 1, pos >> 8);
+    outb(CRTPORT, 15);
+    outb(CRTPORT + 1, pos);
+}
+void snapshotTextTake()                     
+{
+    // Declare some variables
+    int i;
+    ushort* crt = VGA_0x03_MEMORY;
+
+    //Loop through the entire 
+    for (i = 0; i < 2000; i++)
+    {
+        snapshotInstance.registerValues[i] =  crt[i];
+    }
+    //Take the cursor position
+    int pos;     // Cursor position: col + 80*row.
+
+    outb(0x3d4, 14);           
+    pos = inb(0x3d4 + 1) << 8;  
+    outb(0x3d4, 15);            
+    pos |= inb(0x3d4 + 1);      
+
+    //Store the position in our snapshot
+    snapshotInstance.cursorPos = pos; 
+    
+}
 void writeFont(uchar * fontBuffer, unsigned int fontHeight) {
     uchar		 seq2, seq4, gc4, gc5, gc6;
     unsigned int i;
@@ -791,7 +876,7 @@ void writeFont(uchar * fontBuffer, unsigned int fontHeight) {
     outb(VGA_GC_INDEX, 5);
     outb(VGA_GC_DATA, gc5);
     outb(VGA_GC_INDEX, 6);
-    outb(VGA_GC_DATA, gc6); 
+    outb(VGA_GC_DATA, gc6);
 }
 
 /**
@@ -804,21 +889,25 @@ void writeFont(uchar * fontBuffer, unsigned int fontHeight) {
  *   0x13: 320x200x256 graphics mode.
  */
 int consolevgamode(int vgamode) {
-    acquire(&cons.lock);
+    //acquire(&cons.lock);
 
     int errorcode = -1;
 
     switch (vgamode)
     {
         case 0x03: {
+
             writeVideoRegisters(registers_80x25_text);
             writeFont(font_8x16, 16);
+            snapshotTextRestore();
+
 
             currentvgamode = 0x03;
             errorcode = 0;
         } break;
 
         case 0x12: {
+            snapshotTextTake();
             writeVideoRegisters(registers_640x480x16);
 
             currentvgamode = 0x12;
@@ -826,6 +915,7 @@ int consolevgamode(int vgamode) {
         } break;
 
         case 0x13: {
+            snapshotTextTake();
             writeVideoRegisters(registers_320x200x256);
 
             currentvgamode = 0x13;
@@ -833,7 +923,7 @@ int consolevgamode(int vgamode) {
         } break;
     }
 
-    release(&cons.lock);
+    //release(&cons.lock);
 
     return errorcode;
 }
@@ -876,4 +966,12 @@ uchar* consolevgabuffer() {
 
     return base;
 }
-//int pos_x, int pos_y, unsigned char VGA_COLOR
+//int pos_x, int pos_y, int VGA_COLOR
+int setpixel(int pos_x, int pos_y, int VGA_COLOR)
+{
+    //cprintf("%d,%d,%d\n",pos_x,pos_y,VGA_COLOR);
+    // Memory location of pixel = A0000 + 320 * y + x
+    memset(VGA_0x13_MEMORY + VGA_0x13_WIDTH * pos_y + pos_x, VGA_COLOR, 1);
+    //cprintf("Finished setting pixel!");
+    return 0;
+}

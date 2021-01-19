@@ -29,9 +29,13 @@ int add(int a, int b);
 int test(void);
 int videomodevga(void);
 int videomodetext(void);
-int setspecificpixel(int x, int y, int VGA_Colour);
-int setpixel(int pos_x, int pos_y, int VGA_COLOR);
-int ClearScreen(int height, int width, int colour);
+int setspecificpixel(int,int , int);
+
+//draw.c
+int ClearScreen(int, int, int);
+long abs (long);
+//x1, y1, x2,y2,colour
+void DrawLine(int,int,int,int,int);
 // TODO: Declare your user APIs for your system calls.
 
 // ulib.c

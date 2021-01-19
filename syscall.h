@@ -25,4 +25,3 @@
 #define SYS_videomodevga 24
 #define SYS_videomodetext 25
 #define SYS_setspecificpixel 26
-#define SYS_setpixel 27

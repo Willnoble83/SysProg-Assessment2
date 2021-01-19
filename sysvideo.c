@@ -15,24 +15,27 @@ int sys_greeting(void)
 int sys_videomodevga(void)
 {
     consolevgamode(0x13);
+    cprintf("VGA Mode Set to 0x13\n");
     return 0;
 }
 int sys_videomodetext(void)
 {
+    cprintf("VGA Mode Set to 0x03\n");
     consolevgamode(0x03);
     return 0;
 }
-int sys_setpixel(int pos_x, int pos_y, int VGA_COLOR)
+
+//int x, int y, unsigned char VGA_colour
+int sys_setspecificpixel(void)
 {
-    
-    //unsigned char* location = (unsigned char*)0xA0000 + 320 * pos_y + pos_x;
-    //*location = VGA_COLOR;
-    return 0;
-}
-//int pos_x, int pos_y, unsigned char VGA_COLOR
-int sys_setspecificpixel(int x, int y, int VGA_colour)
-{
-    sys_setpixel(x,y,VGA_colour);
+    int x;
+    int y;
+    int VGA_colour;
+    argint(2, &VGA_colour);
+    argint(1, &y);
+    argint(0, &x);
+
+    setpixel(x,y,VGA_colour);
     return 0;
 }
 

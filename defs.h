@@ -25,7 +25,7 @@ int             consolevgamode(int);
 uchar*          consolevgabuffer(void);
 void            consolevgaplane(uchar);
 void            panic(char*) __attribute__((noreturn));
-
+int             setpixel(int pos_x, int pos_y, int VGA_COLOR);
 
 // exec.c
 int             exec(char*, char**);
@@ -125,6 +125,7 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
+
 
 // swtch.S
 void            swtch(struct context**, struct context*);
