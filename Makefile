@@ -189,8 +189,8 @@ UPROGS=\
 	_zombie\
 	_hello\
 	_add\
-	_draw\
-	_drawlines\
+	_cutinto8\
+	_cutinto4\
 
 fs.img: mkfs $(UPROGS)
 	./mkfs fs.img $(UPROGS)

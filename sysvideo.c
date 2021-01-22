@@ -8,14 +8,20 @@ int sys_getch(void) {
 int sys_greeting(void)
 {
     cprintf("Hello, user\n");
-
+ 
     return 0;
 }
 
-int sys_videomodevga(void)
+int sys_videomodevga13(void)
 {
     consolevgamode(0x13);
     cprintf("VGA Mode Set to 0x13\n");
+    return 0;
+}
+int sys_videomodevga12(void)
+{
+    consolevgamode(0x12);
+    cprintf("VGA Mode set to 0x12\n");
     return 0;
 }
 int sys_videomodetext(void)
@@ -39,5 +45,15 @@ int sys_setspecificpixel(void)
     return 0;
 }
 
+int sys_clearscreen13h(void)
+{
+    zeroFillScreen13h();
+    return 0;
+}
+int sys_clearscreen12h(void)
+{
+    zeroFillScreen12h();
+    return 0;
+}
 // TODO: Implement your system call for switching video modes (and any other video-related syscalls)
 // in here.

@@ -59,11 +59,11 @@ void forktest(void)      {
 void forktest(void)      {
   56:	83 ec 10             	sub    $0x10,%esp
     write(fd, s, strlen(s));
-  59:	68 6c 04 00 00       	push   $0x46c
+  59:	68 84 04 00 00       	push   $0x484
   5e:	e8 6d 01 00 00       	call   1d0 <strlen>
   63:	83 c4 0c             	add    $0xc,%esp
   66:	50                   	push   %eax
-  67:	68 6c 04 00 00       	push   $0x46c
+  67:	68 84 04 00 00       	push   $0x484
   6c:	6a 01                	push   $0x1
   6e:	e8 4f 03 00 00       	call   3c2 <write>
   73:	83 c4 10             	add    $0x10,%esp
@@ -98,11 +98,11 @@ void forktest(void)      {
   b6:	75 71                	jne    129 <forktest+0xd9>
     write(fd, s, strlen(s));
   b8:	83 ec 0c             	sub    $0xc,%esp
-  bb:	68 9e 04 00 00       	push   $0x49e
+  bb:	68 b6 04 00 00       	push   $0x4b6
   c0:	e8 0b 01 00 00       	call   1d0 <strlen>
   c5:	83 c4 0c             	add    $0xc,%esp
   c8:	50                   	push   %eax
-  c9:	68 9e 04 00 00       	push   $0x49e
+  c9:	68 b6 04 00 00       	push   $0x4b6
   ce:	6a 01                	push   $0x1
   d0:	e8 ed 02 00 00       	call   3c2 <write>
 }
@@ -112,11 +112,11 @@ void forktest(void)      {
   da:	8d b6 00 00 00 00    	lea    0x0(%esi),%esi
     write(fd, s, strlen(s));
   e0:	83 ec 0c             	sub    $0xc,%esp
-  e3:	68 ac 04 00 00       	push   $0x4ac
+  e3:	68 c4 04 00 00       	push   $0x4c4
   e8:	e8 e3 00 00 00       	call   1d0 <strlen>
   ed:	83 c4 0c             	add    $0xc,%esp
   f0:	50                   	push   %eax
-  f1:	68 ac 04 00 00       	push   $0x4ac
+  f1:	68 c4 04 00 00       	push   $0x4c4
   f6:	6a 01                	push   $0x1
   f8:	e8 c5 02 00 00       	call   3c2 <write>
         exit();
@@ -125,22 +125,22 @@ void forktest(void)      {
  102:	e8 9b 02 00 00       	call   3a2 <exit>
     write(fd, s, strlen(s));
  107:	83 ec 0c             	sub    $0xc,%esp
- 10a:	68 77 04 00 00       	push   $0x477
+ 10a:	68 8f 04 00 00       	push   $0x48f
  10f:	e8 bc 00 00 00       	call   1d0 <strlen>
  114:	83 c4 0c             	add    $0xc,%esp
  117:	50                   	push   %eax
- 118:	68 77 04 00 00       	push   $0x477
+ 118:	68 8f 04 00 00       	push   $0x48f
  11d:	6a 01                	push   $0x1
  11f:	e8 9e 02 00 00       	call   3c2 <write>
             exit();
  124:	e8 79 02 00 00       	call   3a2 <exit>
     write(fd, s, strlen(s));
  129:	83 ec 0c             	sub    $0xc,%esp
- 12c:	68 8b 04 00 00       	push   $0x48b
+ 12c:	68 a3 04 00 00       	push   $0x4a3
  131:	e8 9a 00 00 00       	call   1d0 <strlen>
  136:	83 c4 0c             	add    $0xc,%esp
  139:	50                   	push   %eax
- 13a:	68 8b 04 00 00       	push   $0x48b
+ 13a:	68 a3 04 00 00       	push   $0x4a3
  13f:	6a 01                	push   $0x1
  141:	e8 7c 02 00 00       	call   3c2 <write>
         exit();
@@ -673,8 +673,8 @@ SYSCALL(greeting)
  44f:	cd 40                	int    $0x40
  451:	c3                   	ret    
 
-00000452 <videomodevga>:
-SYSCALL(videomodevga)
+00000452 <videomodevga12>:
+SYSCALL(videomodevga12)
  452:	b8 18 00 00 00       	mov    $0x18,%eax
  457:	cd 40                	int    $0x40
  459:	c3                   	ret    
@@ -686,6 +686,24 @@ SYSCALL(videomodetext)
  461:	c3                   	ret    
 
 00000462 <setspecificpixel>:
+SYSCALL(setspecificpixel)
  462:	b8 1a 00 00 00       	mov    $0x1a,%eax
  467:	cd 40                	int    $0x40
  469:	c3                   	ret    
+
+0000046a <clearscreen13h>:
+SYSCALL(clearscreen13h)
+ 46a:	b8 1b 00 00 00       	mov    $0x1b,%eax
+ 46f:	cd 40                	int    $0x40
+ 471:	c3                   	ret    
+
+00000472 <clearscreen12h>:
+SYSCALL(clearscreen12h)
+ 472:	b8 1c 00 00 00       	mov    $0x1c,%eax
+ 477:	cd 40                	int    $0x40
+ 479:	c3                   	ret    
+
+0000047a <videomodevga13>:
+ 47a:	b8 1d 00 00 00       	mov    $0x1d,%eax
+ 47f:	cd 40                	int    $0x40
+ 481:	c3                   	ret    

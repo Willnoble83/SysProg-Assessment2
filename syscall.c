@@ -104,9 +104,12 @@ extern int sys_uptime(void);
 extern int sys_getch(void);
 //My system calls
 extern int sys_greeting(void);
-extern int sys_videomodevga(void);
+extern int sys_videomodevga12(void);
 extern int sys_videomodetext(void);
 extern int sys_setspecificpixel(void);
+extern int sys_clearscreen13h(void);
+extern int sys_clearscreen12h(void);
+extern int sys_videomodevga13(void);
 
 static int (*syscalls[])(void) = {
     [SYS_fork]    sys_fork,
@@ -132,9 +135,12 @@ static int (*syscalls[])(void) = {
     [SYS_close]   sys_close,
     [SYS_getch]   sys_getch,
     [SYS_greeting] sys_greeting,
-    [SYS_videomodevga] sys_videomodevga,
+    [SYS_videomodevga12] sys_videomodevga12,
     [SYS_videomodetext] sys_videomodetext,
     [SYS_setspecificpixel] sys_setspecificpixel,
+    [SYS_clearscreen13h] sys_clearscreen13h,
+    [SYS_clearscreen12h] sys_clearscreen12h,
+    [SYS_videomodevga13] sys_videomodevga13,
     // TODO: Add your system call function to the OS syscall table.
 };
 

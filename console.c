@@ -29,13 +29,13 @@ static int panicked = 0;
 
 uint currentvgamode = 0x03;
 
-struct ConsoleSnapshot
+struct Snapshot
 {
     int cursorPos;
-    uchar registerValues[2000];
+    uchar registerCopy[2000];
 };
 
-struct ConsoleSnapshot snapshotInstance;
+struct Snapshot consoleSnapshot;
 
 /**
  * Global console state shared between all processes and CPUs.
@@ -163,7 +163,7 @@ static void cgaputc(int c) {
     pos = inb(CRTPORT + 1) << 8;
     outb(CRTPORT, 15);
     pos |= inb(CRTPORT + 1);
-    if(currentvgamode ==0x03) //If we are in text, work as usual
+    if(currentvgamode ==0x03) //If we are in text, go to the usual execution
     {
         if (c == '\n') {
             pos += 80 - pos % 80;
@@ -194,27 +194,28 @@ static void cgaputc(int c) {
     }
     else  //If we're in non-text mode, update our snapshot instance instead!
     { 
-        if (c == '\n') {
-            snapshotInstance.cursorPos += 80 - snapshotInstance.cursorPos % 80;
+        if (c == '\n') { //If character is a new line
+            consoleSnapshot.cursorPos += 80 - consoleSnapshot.cursorPos % 80;
         }
-        else if (c == BACKSPACE) {
-            if (snapshotInstance.cursorPos > 0) {
-                --snapshotInstance.cursorPos;
+        else if (c == BACKSPACE) { //If character is a backspace
+            if (consoleSnapshot.cursorPos > 0) {
+                --consoleSnapshot.cursorPos;
             }
         }
-        else {
-            snapshotInstance.registerValues[snapshotInstance.cursorPos] = (c & 0xff) | 0x0700;  // black on white
-            snapshotInstance.cursorPos++;
+        else { //Update the cursor position in the register values with the character, increment cursor pos
+            consoleSnapshot.registerCopy[consoleSnapshot.cursorPos] = (c & 0xff) | 0x0700;  // black on white
+            consoleSnapshot.cursorPos++;
         }
         
-        if (snapshotInstance.cursorPos < 0 || snapshotInstance.cursorPos > 25 * 80) {
+        //Error handling for under and overflow
+        if (consoleSnapshot.cursorPos < 0 || consoleSnapshot.cursorPos > 25 * 80) {
             panic("pos under/overflow");
         }
-
-        if ((snapshotInstance.cursorPos / 80) >= 24) { // Scroll up.
-            memmove(snapshotInstance.registerValues, snapshotInstance.registerValues + 80, sizeof(snapshotInstance.registerValues[0]) * 23 * 80);
-            snapshotInstance.cursorPos -= 80;
-            memset(snapshotInstance.registerValues + snapshotInstance.cursorPos, 0, sizeof(snapshotInstance.registerValues[0]) * (24 * 80 - snapshotInstance.cursorPos));
+        //Handles text scrolling through the top of the screen
+        if ((consoleSnapshot.cursorPos / 80) >= 24) { // Scroll up.
+            memmove(consoleSnapshot.registerCopy, consoleSnapshot.registerCopy + 80, sizeof(consoleSnapshot.registerCopy[0]) * 23 * 80);
+            consoleSnapshot.cursorPos -= 80;
+            memset(consoleSnapshot.registerCopy + consoleSnapshot.cursorPos, 0, sizeof(consoleSnapshot.registerCopy[0]) * (24 * 80 - consoleSnapshot.cursorPos));
         }
         
     }
@@ -798,13 +799,13 @@ void snapshotTextRestore()                  // For restoring the console when en
     int i;
     ushort* crt = VGA_0x03_MEMORY;
 
-    for (i = 0; i < 2000; i++) //Loop through the entire register values in our snapshot
+    for (i = 0; i < 2000; i++) //Loop through the entire register values in our snapshot and place them into the display
     {
-        crt[i] = (snapshotInstance.registerValues[i] & 0xff) | 0x0700;
+        crt[i] = (consoleSnapshot.registerCopy[i] & 0xff) | 0x0700;
     }
 
 
-    int pos = snapshotInstance.cursorPos;
+    int pos = consoleSnapshot.cursorPos;
     outb(CRTPORT, 14);
     outb(CRTPORT + 1, pos >> 8);
     outb(CRTPORT, 15);
@@ -812,26 +813,30 @@ void snapshotTextRestore()                  // For restoring the console when en
 }
 void snapshotTextTake()                     
 {
-    // Declare some variables
-    int i;
-    ushort* crt = VGA_0x03_MEMORY;
-
-    //Loop through the entire 
-    for (i = 0; i < 2000; i++)
+    if(currentvgamode==0x03) //Only take the snapshot if we are in 0x03 already to stop loss of console data
     {
-        snapshotInstance.registerValues[i] =  crt[i];
+        // Declare some variables
+        int i;
+        ushort* crtRegister = VGA_0x03_MEMORY;
+
+        //Loop through the register and take all the values
+        for (i = 0; i < 2000; i++)
+        {
+            consoleSnapshot.registerCopy[i] =  crtRegister[i];
+        }
+        //Declare variable to hold cursor position temporarily
+        int TempPos;     // Cursor position: col + 80*row.
+
+
+        //Take cursor position from os
+        outb(0x3d4, 14);           
+        TempPos = inb(0x3d4 + 1) << 8;  
+        outb(0x3d4, 15);            
+        TempPos |= inb(0x3d4 + 1);      
+
+        //Store the position in our snapshot
+        consoleSnapshot.cursorPos = TempPos; 
     }
-    //Take the cursor position
-    int pos;     // Cursor position: col + 80*row.
-
-    outb(0x3d4, 14);           
-    pos = inb(0x3d4 + 1) << 8;  
-    outb(0x3d4, 15);            
-    pos |= inb(0x3d4 + 1);      
-
-    //Store the position in our snapshot
-    snapshotInstance.cursorPos = pos; 
-    
 }
 void writeFont(uchar * fontBuffer, unsigned int fontHeight) {
     uchar		 seq2, seq4, gc4, gc5, gc6;
@@ -896,7 +901,6 @@ int consolevgamode(int vgamode) {
     switch (vgamode)
     {
         case 0x03: {
-
             writeVideoRegisters(registers_80x25_text);
             writeFont(font_8x16, 16);
             snapshotTextRestore();
@@ -966,12 +970,188 @@ uchar* consolevgabuffer() {
 
     return base;
 }
+
+
+//Function to find the binary value from an x_position - Used for setting pixels
+int binaryStuff(int x_pos)
+{
+    switch (x_pos % 8)
+    {
+        case 0:
+            return 128;
+        case 1:
+            return 64;
+        case 2: 
+            return 32;
+        case 3:
+            return 16;
+        case 4:
+            return 8;
+        case 5: 
+            return 4;
+        case 6: 
+            return 2;
+        case 7: 
+            return 1;
+    }
+    return -1;
+}
+
 //int pos_x, int pos_y, int VGA_COLOR
 int setpixel(int pos_x, int pos_y, int VGA_COLOR)
 {
-    //cprintf("%d,%d,%d\n",pos_x,pos_y,VGA_COLOR);
-    // Memory location of pixel = A0000 + 320 * y + x
-    memset(VGA_0x13_MEMORY + VGA_0x13_WIDTH * pos_y + pos_x, VGA_COLOR, 1);
-    //cprintf("Finished setting pixel!");
+   
+    if (currentvgamode == 0x13)  // Memory location of pixel = A0000 + 320 * y + x
+    {
+        memset(VGA_0x13_MEMORY + VGA_0x13_WIDTH * pos_y + pos_x, VGA_COLOR, 1);
+    }
+    else if (currentvgamode == 0x12)  //640x480 (307200)
+    {
+        //Define and initialise values
+        int colourAsInt = VGA_COLOR;
+        bool BIT3 = false, BIT2 = false, BIT1 = false, BIT0 = false;
+
+
+        //Used for transferring data in and out of memory
+        uchar* memoryPointer;
+        uchar* targetByte;
+        int byteFromMemory;
+        int* ptrByteFromMemory = &byteFromMemory;
+
+        int BitAddition = binaryStuff(pos_x); // Figure out what binary value we add to this byte.
+
+        //Calculate what bits need to be added
+        if ((colourAsInt-8) >= 0)
+        {
+            BIT0 = true;//Plane 0; // Set Least significant bit
+            colourAsInt -= 8;
+        }
+        if ((colourAsInt-4) >= 0)
+        {
+            BIT1 = true;// Plane 1;
+            colourAsInt -= 4;
+        }
+        if ((colourAsInt-2) >= 0)
+        {
+            BIT2 = true;//Plane 2;
+            colourAsInt -= 2;
+        }
+        if ((colourAsInt-1) >= 0)
+        {
+            BIT3 = true;//Plane 3; // Set Most significant bit
+            colourAsInt -= 1;
+        }
+
+        //Set values on each plane as appropriate
+        if (BIT3)
+        {
+            // Change the plane and get new pointer and update our target byte
+            consolevgaplane(0);
+            memoryPointer = consolevgabuffer();
+            targetByte = memoryPointer + (640 * pos_y + pos_x) /8;
+
+            // Move the target byte into memory so we can update it
+            memmove(ptrByteFromMemory, targetByte, 8);
+            byteFromMemory += BitAddition;
+
+            //Replace the updated data into target byte
+            memset(targetByte, byteFromMemory, 1);
+        }
+
+        if (BIT2)
+        {
+            // Change the plane and get new pointer and update our target byte
+            consolevgaplane(1);
+            memoryPointer = consolevgabuffer();
+            targetByte = memoryPointer + ((640 * pos_y + pos_x) /8);
+
+            // Move the target byte into memory so we can update it
+            memmove(ptrByteFromMemory, targetByte, 8);
+            byteFromMemory += BitAddition;
+
+            //Replace the updated data into target byte
+            memset(targetByte, byteFromMemory, 1);
+        }
+
+        if (BIT1)
+        {
+            // Change the plane and get new pointer and update our target byte
+            consolevgaplane(2);
+            memoryPointer = consolevgabuffer();
+            targetByte = memoryPointer + ((640 * pos_y + pos_x) /8);
+
+            // Move the target byte into memory so we can update it
+            memmove(ptrByteFromMemory, targetByte, 8);
+            byteFromMemory += BitAddition;
+
+            //Replace the updated data into target byte
+            memset(targetByte, byteFromMemory, 1);
+        }
+
+        if (BIT0)
+        {
+            // Change the plane and get new pointer and update our target byte
+            consolevgaplane(3);
+            memoryPointer = consolevgabuffer();
+            targetByte = memoryPointer  + ((640 * pos_y + pos_x) /8);
+
+            // Move the target byte into memory so we can update it
+            memmove(ptrByteFromMemory, targetByte, 8);
+            byteFromMemory += BitAddition;
+
+            //Replace the updated data into target byte
+            memset(targetByte, byteFromMemory, 1);
+        }
+        
+    }
+    else // Don't draw anything if we aren't in a drawing mode
+    { 
+        return 0;
+    }
     return 0;
+}
+
+//Set the screen to black if we are in 13h
+void zeroFillScreen13h()
+{
+    //Declare variables
+    int i;
+    ushort* memoryPointer = VGA_0x13_MEMORY;
+
+
+    for (i = 0; i < 64000; i++) //Loop through the entire register
+    {
+        memoryPointer[i] = (0);
+    }
+    
+}
+
+
+//Set the screen to black if we are in 12h.
+void zeroFillScreen12h()
+{
+    //640x480 = 307200 values
+    //Declare variables
+    unsigned int pos_X, pos_Y;
+    unsigned int planeNo;
+    uchar* memoryPointer;
+
+
+    for (planeNo = 0; planeNo < 4; planeNo++)
+    {
+        consolevgaplane(planeNo);
+        memoryPointer = consolevgabuffer();
+        for (pos_X = 0; pos_X < 640; pos_X++) // 640 - Loop through every x value
+        {
+
+            for (pos_Y = 0; pos_Y < 480; pos_Y++) //480 - Loop through every Y value on each row
+            {
+
+
+                memset(memoryPointer + (640) * pos_Y +pos_X, 0, 1); //pass in 255 (0xFF) to fill the entire byte
+
+
+            }
+        }
+    }
 }

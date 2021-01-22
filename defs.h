@@ -26,7 +26,8 @@ uchar*          consolevgabuffer(void);
 void            consolevgaplane(uchar);
 void            panic(char*) __attribute__((noreturn));
 int             setpixel(int pos_x, int pos_y, int VGA_COLOR);
-
+void            zeroFillScreen13h();
+void            zeroFillScreen12h();
 // exec.c
 int             exec(char*, char**);
 

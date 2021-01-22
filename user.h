@@ -27,15 +27,18 @@ int getch(void);
 int greeting(void);
 int add(int a, int b);
 int test(void);
-int videomodevga(void);
+int videomodevga12(void);
+int videomodevga13(void);
 int videomodetext(void);
 int setspecificpixel(int,int , int);
-
+int clearscreen13h(void);
+int clearscreen12h(void);
 //draw.c
-int ClearScreen(int, int, int);
+//int ClearScreen(int, int, int);
 long abs (long);
 //x1, y1, x2,y2,colour
 void DrawLine(int,int,int,int,int);
+
 // TODO: Declare your user APIs for your system calls.
 
 // ulib.c

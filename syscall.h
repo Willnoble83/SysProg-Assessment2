@@ -22,6 +22,9 @@
 #define SYS_close  21
 #define SYS_getch  22
 #define SYS_greeting 23
-#define SYS_videomodevga 24
+#define SYS_videomodevga12 24
 #define SYS_videomodetext 25
 #define SYS_setspecificpixel 26
+#define SYS_clearscreen13h 27
+#define SYS_clearscreen12h 28
+#define SYS_videomodevga13 29
